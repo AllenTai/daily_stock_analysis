@@ -2,8 +2,20 @@ import { expect, test, type Page } from '@playwright/test';
 
 const smokePassword = process.env.DSA_WEB_SMOKE_PASSWORD;
 
+if (!smokePassword) {
+  test.skip(true, 'Set DSA_WEB_SMOKE_PASSWORD to run report markdown smoke tests.');
+}
+
+test.use({ locale: 'zh-CN' });
+
+const UI_LANGUAGE_STORAGE_KEY = 'dsa.uiLanguage';
+
 async function login(page: Page) {
   test.skip(!smokePassword, 'Set DSA_WEB_SMOKE_PASSWORD to run report markdown tests.');
+
+  await page.addInitScript((storageKey) => {
+    window.localStorage.setItem(storageKey, 'zh');
+  }, UI_LANGUAGE_STORAGE_KEY);
 
   // Navigate to login page
   await page.goto('/login');
@@ -31,7 +43,7 @@ async function login(page: Page) {
   await page.waitForURL('/', { timeout: 15_000 });
   await page.waitForLoadState('domcontentloaded');
   // Wait for page to stabilize by checking for stock input
-  const stockInput = page.getByPlaceholder('输入股票代码，如 600519、HK00700、AAPL');
+  const stockInput = page.getByPlaceholder('输入股票代码或名称，如 600519、贵州茅台、AAPL');
   await expect(stockInput).toBeVisible({ timeout: 10_000 });
 }
 
@@ -144,7 +156,7 @@ test.describe('ReportMarkdown component', () => {
 
     // On mobile, a report should already be selected (showing in main content)
     // Wait for main content to load
-    await expect(page.getByPlaceholder('输入股票代码，如 600519、HK00700、AAPL')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByPlaceholder('输入股票代码或名称，如 600519、贵州茅台、AAPL')).toBeVisible({ timeout: 10_000 });
 
     // Click the "完整分析报告" button to open the markdown drawer
     const detailedReportButton = page.getByRole('button', { name: '完整分析报告' });
